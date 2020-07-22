@@ -1,0 +1,10 @@
+---
+
+# Ansible playbook to start the Splunk
+
+- include: roles/operate-splunk/tasks/cleanup.yml
+
+- name: "Start splunk - {{ inventory_hostname }}"
+  shell: "{{ splunk_home }}/splunk/bin/splunk start"
+  ignore_errors: true
+  

@@ -1,0 +1,178 @@
+---
+# file: provision-splunk-cluster.yml
+
+# This playbook will provision a Splunk cluster Instance and Install Splunk with the basic configuration:
+
+# {{ cloud_provider }} Infrastucture bigip_provision
+#- name: "Create New Cluster Instance for Stack - {{ stack_name }}"
+#  hosts: localhost
+#  connection: local
+#  gather_facts: false
+#  vars:
+#    - timestamp: "{{ lookup('pipe','date +%Y%m%d-%H%M%S') }}"
+#  vars_files:
+#    - "vars/{{ cloud_provider }}-comman{{ env }}.yml"
+#    - "vars/splunk-common.yml"
+#    - "vars/splunk-cluster-common.yml"
+#    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+#  roles:
+#    - { role: "{{ cloud_provider }}-cluster", operation: create-cloudformation-stack, tags: step1-aws-infra}
+
+#- name: "register new Instance DNS name"
+#  hosts: localhost
+#  connection: local
+#  gather_facts: false
+#  vars_files:
+#    - "vars/aws-common{{ env }}.yml"
+#    - "vars/{{ stack_name }}.yml"
+#    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+#  roles:
+#    - { role: aws-dns, operation: register-dns-name-cluster, instance_type: static, tags: step2-aws-dns }
+
+# Splunk installation and configuration 
+
+# Enable this block of when you default Splunk App configuration and MD5 configuration.
+
+# - name: "Checkout latest Splunk Configuration from Git"
+#   host: localhost
+#   connection: local
+#   gather_facts: false
+#   vars_files:
+#     - "vars/splunk-common.yml"
+#   roles:
+#     - { role: splunk-common, operation: checkout-splunk-config, tags: step3-git }
+
+# Enable this block of when you default Splunk Admin Password to be retrieved from kms.
+
+# - name: "retrieve splunk security credentials"
+#   hosts: localhost
+#   connection: local
+#   gather_facts: false
+#   vars_files:
+#     - "vars/aws-common{{ env }}.yml"
+#     - "vars/splunk-common.yml"
+#   roles:
+#     - { role: splunk-kms, operation: decrypt-ansible-key ,tags: step4-kms }
+#     - { role: splunk-kms, operations: decrypt-password, tags: step4-kms }
+
+- name: "[step4-install-splunk] Splunk install setup"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+  tasks:
+    - include: roles/splunk-common/tasks/checkout-splunk-config.yml
+    - inlcude: roles/splunk-common/tasks/install-setup.yml
+    - include: roles/splunk-common/tasks/verify-install-md5.yml
+
+# step 5 will not run if "idx_master_create_or_not"==false
+- name: "Deploy Splunk indexer cluster master"
+  hosts: splunk-index-master
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: deploy-splunk-cluster, operation: deploy-splunk-idx-master, instance_type: cluster , splunk_type: splunk-index-master, tags: step5-deploy-idx-master  }
+    - { role: deploy-splunk-forwarder, instance_type: cluster, when: install_forwarder, tags: step5-deploy-idx-master }
+
+# step 6 will not run if "idx_master_create_or_not"==false
+- name: "Deploy Splunk indexer cluster member"
+  hosts: splunk-index-master
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: deploy-splunk-cluster, operation: deploy-splunk-idx-master, instance_type: cluster , splunk_type: splunk-index-master, tags: step6-deploy-idx-member  }
+    - { role: deploy-splunk-forwarder, instance_type: cluster, when: install_forwarder, tags: step6-deploy-idx-member }
+
+- name: "Deploy Splunk head cluster deployer"
+  hosts: splunk-search-deployer
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: deploy-splunk-cluster, operation: deploy-splunk-sh-deployer, instance_type: cluster , splunk_type: splunk-search-deployer, tags: step7-deploy-sh-deployer  }
+    - { role: deploy-splunk-forwarder, instance_type: cluster, when: install_forwarder, tags: step7-deploy-sh-deployer }
+
+
+- name: "Deploy Splunk head cluster member"
+  hosts: splunk-search-member
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: deploy-splunk-cluster, operation: deploy-splunk-sh-member, instance_type: cluster , splunk_type: splunk-search-member, tags: step8-deploy-sh-member  }
+    - { role: deploy-splunk-forwarder, instance_type: cluster, when: install_forwarder, tags: step8-deploy-sh-member }
+
+# Splunk cluster post installation operations 
+
+- name: "select sh-0 as the captain of the splunk search head cluster"
+  hosts: splunk-search-member[0]
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: operate-splunk, operation: sh-captain-election, tags: step9-elect-sh-captain }
+
+- name: "Rolling restart splunk search head cluster members"
+  hosts: splunk-search-member[0]
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: operate-splunk, operation: sh-cluster-rolling-restart, tags: step10-restart-sh-cluster }
+
+# step 11 will not run if "idx_master_create_or_not"==false
+- name: "Rolling restart splunk indexer cluster members"
+  hosts: splunk-index-master
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: operate-splunk, operation: idx-cluster-rolling-restart, tags: step11-restart-idx-cluster  }
+
+# step 12 will not run if "idx_master_create_or_not"==false
+- name: "restart splunk indexer cluster master"
+  hosts: splunk-index-master
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: operate-splunk, operation: restart, tags: step12-restart-idx-master  }
+
+- name: "restart individual splunk cluster components"
+  hosts: splunk-search-member
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    - "vars/splunk-cluster-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: operate-splunk, operation: restart, tags: step13-restart-splunk  }

@@ -1,0 +1,49 @@
+---
+# file: roles/splunk-common/tasks/chechout-splunk-config.yml
+
+####
+# This playbook will be downloading the Splunk related Security files,
+# Config Files and download splunk binaries
+####
+
+# - name: "Checkout the latest platform configuration"
+#   git:
+#     repo: "{{ platform_repos_url }}"
+#     dest: "{{ platform_repos_home }}"
+#     key_file: "{{ git_private_key }}"
+#     accept_hostkey: yes
+#     update: yes
+#     force: yes
+#     version: master
+
+# - name: "Checkout the Security configuration"
+#   git:
+#     repo: "{{ security_repos_url }}"
+#     dest: "{{ security_repos_home }}"
+#     key_file: "{{ git_private_key }}"
+#     accept_hostkey: yes
+#     update: yes
+#     force: yes
+#     version: master
+
+# - name: "Download the Splunk MD5 from the Git Repo"
+#   git:
+#     repo: "{{ splunk_binary_repos_url }}"
+#     dest: "{{ repos_home }}/splunk_md5"
+#     key_file: "{{ git_private_key }}"
+#     accept_hostkey: yes
+#     update: yes
+#     force: yes
+#     version: master
+
+  # Download the Splunk MD5 from server
+  - name: Create a directory if it does not exist
+    file:
+      path: "{{ repos_home }}/splunk_md5/splunk"
+      state: directory
+      mode: '0755'
+
+  - name:  "Download the Splunk MD5 from the Server"
+    shell: curl -O 'https://download.splunk.com/products/splunk/releases/7.1.1/linux/splunk-7.1.1-8f0ead9ec3db-Linux-x86_64.tgz.md5'
+    args:
+      chdir: "{{ repos_home }}/splunk_md5/splunk"

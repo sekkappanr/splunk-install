@@ -1,0 +1,31 @@
+---
+
+# Decide Splunk Configuration location based on environment
+
+- block:
+  - name: splunk should not be installed at the installation directory
+    retries: 3
+    delay: 10
+    stat: path={{ splunk_home }}/splunk
+    register: check_splunk_install
+
+- block:
+  - set_fact:
+      env_dir: np
+    when: env == "np"
+  
+  - set_fact:
+      env_dir: prod
+    when: env == ""
+
+# install splunk vanilla avi_api_version
+
+- block:
+  - import_tasks: roles/splunk-common/tasks/install-splunk-vanilla.yml
+  when: not check_splunk_install.stat.exists
+
+# action on operation 
+
+- block:
+  - import_tasks: "{{ operation }}.yml"
+  tags: cluster-app-deployment

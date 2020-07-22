@@ -1,0 +1,10 @@
+---
+
+# Ansible playbook to stop  Splunk
+
+- include: roles/operate-splunk/tasks/cleanup.yml
+
+- name: "Stop splunk - {{ inventory_hostname }}"
+  shell: "{{ splunk_home }}/splunk/bin/splunk stop"
+  ignore_errors: true
+  

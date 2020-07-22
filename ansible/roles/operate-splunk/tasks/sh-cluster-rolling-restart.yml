@@ -1,0 +1,8 @@
+---
+
+# Ansible script to perform thr rolling restart for the Splunk avi_cluster
+
+- name: "Rolling restart splunk search head cluster members"
+  shell: "{{ splunk_home }}/splunk/bin/splunk rolling-restart shcluster-members -auth splunk-admin:{{ password }}"
+  register: results
+  failed_when: results|failed

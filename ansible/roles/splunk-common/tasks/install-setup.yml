@@ -1,0 +1,64 @@
+---
+
+# file: roles/splunk-common/tasks/install-setup.yml
+
+# Download Splunk and Splunk Forwarder bundle from Artifactory
+
+# Splunk Enterprise : Enable this block to verify whether is the splunk is complaint with
+- block:
+  - name: Define Splunk Enterprise Bundle
+    shell: ls -A1 {{ repos_home }}/splunk_md5/splunk | grep splunk-{{ splunk_version }} | sed 's\.md5\\g'
+    register: raw_splunk
+  - fail:
+      msg: md5 for splunk enterprise bundle version {{ splunk_version }} hasn't been update to splunk_md5 repo. Please download the bundle from www.splunk.com and update the .md5 file in the splunk_md5 repo accordingly
+    when: raw_splunk.stdout == ""
+  - set_fact:
+      splunk_enterprise_bundle: "{{ raw_splunk.stdout }}"
+
+# Splunk Forwarder      
+  # - name: Define Splunk Forwarder Enterprise Bundle
+  #   shell: ls -A1 {{ repos_home }}/splunk_md5/splunkforwarder | grep splunkforwarder-{{ splunk_version }} | sed 's\.md5\\g'
+  #   register: raw_splunkforwarder
+  # - fail:
+  #     msg: md5 for splunkforwarder enterprise bundle version {{ splunk_version }} hasn't been update to splunk_md5 repo. Please download the bundle from www.splunk.com and update the .md5 file in the splunk_md5 repo accordingly
+  #   when: raw_splunkforwarder.stdout == ""
+  # - set_fact:
+  #     forwarder_bundle: "{{ raw_splunkforwarder.stdout }}"
+
+# debug
+  - debug:
+      var: splunk_enterprise_bundle
+  # - debug:
+  #     var: forwarder_bundle
+
+- block:
+  - name: "Check if the splunk file exist in the directory"
+    stat:
+      path: /splunk/splunk_bundle/{{ splunk_enterprise_bundle }}
+    register: splunk_bundle_stats
+
+  - name: Create a directory if it does not exist
+    file:
+      path: "/splunk/splunk_bundle"
+      state: directory
+      mode: '0755'
+    when: splunk_bundle_stats.stat.exists == False
+  
+  # Download from Artifactory
+  - shell: curl -O 'https://download.splunk.com/products/splunk/releases/7.1.1/linux/splunk-7.1.1-8f0ead9ec3db-Linux-x86_64.tgz'
+    args:
+      chdir: /splunk/splunk_bundle
+    when: splunk_bundle_stats.stat.exists == False
+
+  # - name: "Check if the splunkforwarder bundle file exist in the directory"
+  #   stat:
+  #     path: /splunk/splunk_bundle/{{ forwarder_bundle }}
+  #   register: splunkforwarder_bundle_stats
+  
+  # Download from Artifactory
+  # - shell: curl -O 'https://splunk.com
+  #   args:
+  #     chdir: /splunk/splunk_bundle
+  #   when: splunkforwarder_bundle_stats.stat.exists == False
+  
+  delegate_to: localhost

@@ -1,0 +1,52 @@
+---
+
+# Decide Splunk Configuration localtion based on the environment
+
+- block:
+  - set_fact:
+      env_dir: np
+    when: env == "np"
+
+  - set_fact:
+      env_dir: prod
+    when: env == ""
+
+  - set_fact:
+      cert_host_name: "splunk-license"
+    when: splunk_type == "splunk-license-server"
+
+  - set_fact:
+      cert_host_name: "splunk-deploy"
+    when: splunk_type == "splunk-deployment-server"
+
+  - set_fact:
+      cert_host_name: "splunk-dmc"
+    when: splunk_type == "splunk-dmc"
+
+# install splunk vanilla version
+- block:
+  - import_tasks: roles/splunk-common/tasks/install-splunk-vanilla.yml
+
+  - name: "Disable Index and forward"
+    template: src=roles/deploy-splunk-static/templates/outputs.conf.j2 dest={{ splunk_home }}/splunk/etc/system/local/outputs.conf
+
+# Configure as Splunk license master
+- block:
+  - name: "Dploy splunk License to License master"
+    copy: src={{ repos_home }}/platform_config/{{ env_dir }}/splunk_license/enterprise dest={{ splunk_etc }}/licenses
+  when: splunk_type == "splunk-license-server"
+
+# Configure as SPlunk deployment Server
+
+- block:
+  - name: "Upload serverclass.conf template"
+    copy: src={{ platform_repos_home }}/deployment/serverclass.conf dest={{ splunk_home }}/splunk/etc/system/local/serverclass.conf
+  when: splunk_type == "splunk-deployment-server"
+
+
+# Configure as SPlunk DMC
+
+- block:
+  - name: "Deploy indexes.conf for dmc"
+    copy: src={{ platform_repos_home }}/indexer/idx_dmc dest={{ splunk_home }}/splunk/etc/apps
+  when: splunk_type == "splunk-dmc"

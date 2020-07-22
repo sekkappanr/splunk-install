@@ -1,0 +1,78 @@
+---
+
+# file: provision-splunk-static.yml
+
+# This playbook will provision a standalone Instance and Install Splunk with the basic configuration:
+
+# {{ cloud_provider }} Infrastucture bigip_provision
+#- name: "Create New Standlone Instance for Stack - {{ stack_name }}"
+#  hosts: localhost
+#  connection: local
+#  gather_facts: false
+#  vars:
+#    - timestamp: "{{ lookup('pipe','date +%Y%m%d-%H%M%S') }}"
+#  vars_files:
+#    - "vars/{{ cloud_provider }}-comman{{ env }}.yml"
+#    - "vars/{{ stack_name }}.yml"
+#    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+#  roles:
+#    - { role: "{{ cloud_provider }}-standalone", operation: create-cloudformation-stack, tags: step1-aws-infra}
+
+- name: "register new Instance DNS name"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-tenant-common.yml"
+    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+  roles:
+    - { role: aws-dns, operation: register-dns-name-standalone, instance_type: tenant, tags: step2-aws-dns }
+
+#Splunk installation and configuration 
+
+# Enable this if you have basic configuration file to be downloaded from repo
+- name: "Checkout latest Splunk Configuration from Git"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "vars/splunk-common.yml"
+  roles:
+    - { role: splunk-common, operation: checkout-splunk-config, tags: step3-git }
+
+# - name: "retrieve splunk security credentials"
+#   hosts: localhost
+#   connection: local
+#   gather_facts: false
+#   vars_files:
+#     # - "vars/aws-common{{ env }}.yml"
+#     - "vars/splunk-common.yml"
+#   roles:
+#     - { role: splunk-kms, operation: decrypt-ansible-key ,tags: step4-kms }
+#     - { role: splunk-kms, operations: decrypt-password, tags: step4-kms }
+
+- name: "[step4-install-splunk] Splunk install setup"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    # - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+  tasks:
+    - include: roles/splunk-common/tasks/checkout-splunk-config.yml
+    - include: roles/splunk-common/tasks/install-setup.yml
+    - include: roles/splunk-common/tasks/verify-install-md5.yml
+
+- name: "deploy a splunk static instance - {{ stack_name }}"
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    # - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+    # - "vars/{{ stack_name }}.yml"
+    # - "../specs/{{ specs_env }}/{{ stack_name }}.yml"   
+  roles:
+    - { role: deploy-splunk-static, instance_type: static, splunk_type: "{{ stack_name }}", tags: step5-depoy }
+    # - { role: deploy-splunk-forwarder, instance_type: static, when: install_forwarder, tags: step5-depoy }
+    - { role: operate-splunk, operation: restart, tags: step5-deploy }

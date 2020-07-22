@@ -1,0 +1,7 @@
+---
+
+# file: roles/operate-splunk/tasks/cleanup.yml
+
+- name: cleanup instance.cfg
+  file: path={{ splunk_home }}/splunk/etc/instance.cfg state=absent
+  ignore_errors: true

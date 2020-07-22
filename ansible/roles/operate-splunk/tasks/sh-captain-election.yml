@@ -1,0 +1,9 @@
+---
+# Search head Captain election Operations
+
+- name: "Get search head member list"
+  shell: echo `for i in {0..{{ search_head_member_count | int - 1 }}}; do echo -n "https://{{ search_head_member_dns_prefix }}-$i.{{ dns_domain_name }}:{{ splunk_management_port }}, "; done;` | sed 's/.\{1\}$//'
+  register: sh_servers_list
+
+- name: " Captain election in {{ inventory_hostname }}"
+  shell: "{{ splunk_cmd }} bootstrap shcluster-captain -server-list '{{ sh_servers_list.stdout }}' -auth admin:{{ password }}"

@@ -1,0 +1,11 @@
+---
+
+
+# Deploy Search Head Common Configuration to Search head cluster member
+
+- block:
+  - name: "Deploy search_head common configuration to search_head cluster member"
+    copy: src={{ platform_repos_home }}/{{ env_dir }}/search_head/{{ item }} dest={{ splunk_etc }}/apps
+    with_items:
+      - sh_common_config
+      - sh_common_data

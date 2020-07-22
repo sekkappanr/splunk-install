@@ -1,0 +1,23 @@
+---
+
+# Load Splunk Configuration
+- block:
+  - name: "Load Splunk confirationf or the {{ splunk_type }}"
+    include_vars: "roles/deploy-splunk-cluster/vars/{{ splunk_type }}.yml"
+  when: instance_type == "cluster"
+
+# Install Splunk Vanilla avi_api_version
+- block: 
+  - name: "Install Splunk on  {{ inventory_hostname }}"
+    unarchive: src=/splunk/splunk_bundle/{{ hostvars['localost']['splunk_enterprise_bundle'] }} dest={{ splunk_home }}
+
+# Deploy Default Configuration
+# - block:
+#   - name: "Disable First time login page"
+#     file: path={{ splunk_etc }}/.ui_login state=touch mode="u=rw,g=r,o=r"
+
+  # - name: "Update splunk_home and splunk_db"
+  #   template: src=roles/splunk-common/templates/splunk-launch.conf.j2 dest={{ splunk_etc }}/splunk-launch.conf
+
+  # - name: "Create server.conf on {{ inventory_hostname }}"
+  #   template: src=roles/splunk-common/templates/server.conf.j2 dest={{ splunk_etc }}/system/local/server.conf

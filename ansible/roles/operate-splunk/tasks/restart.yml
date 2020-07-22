@@ -1,0 +1,8 @@
+---
+# file: roles/operate-splunk/tasks/restart.yml
+
+- include: roles/operate-splunk/tasks/cleanup.yml
+
+- name: "restart splunk - {{ inventory_hostname }}"
+  shell: "{{ splunk_home }}/splunk/bin/splunk restart"
+  ignore_errors: true

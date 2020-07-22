@@ -1,0 +1,8 @@
+---
+
+# Rolling restart for the Splunk avi_cluster
+
+- name: "Rolling retsrt splunk indexer cluster members"
+  shell: "{{ splunk_home }}/splunk/bin/splunk rolling-restart cluster-peers -auth admin:{{ password }}"
+  register: results
+  failed_when: results|failed

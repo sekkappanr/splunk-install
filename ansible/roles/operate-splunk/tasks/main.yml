@@ -1,0 +1,24 @@
+---
+
+# file: roles/operate-splunk/tasks/main.yml
+
+# clean up old instance vmware_guest_find
+- block:
+  - name: "Cleanup instance.cfg"
+    file: path={{ forwarder_home }}/splunkforwarder/etc/instance.cfg state=absent
+    ignore_errors: true
+
+# action on splunk operations
+- block:
+  - name: "action on splunk operations - {{ operation }}"
+    shell: "{{ splunk_home }}/splunk/bib/splunk {{ operation }} --accept-license"
+    when: rfirst_time is defined
+
+- import_tasks: "{{ operation }}.yml"
+  when: first_time is not defined
+
+  
+
+
+
+  

@@ -1,0 +1,8 @@
+---
+
+# Clean Local DNS cache
+
+- name: clean local dns cache
+  file: path=~/.ssh/known_hosts state=absent
+
+- import_tasks: roles/dns-register/task/{{ operation }}.yml

@@ -1,0 +1,23 @@
+---
+# file: roles/splunk-common/tasks/main.yml
+
+# pre-check before install splunk
+- block:
+  - name: splunk should not be installed at the installation directory
+    stat: path={{ splunk_home }}/splunk
+    register: check_splunk_install
+
+# decide splunk configuration location based on the environment
+- block:
+  - set_fact:
+      env_dir: np
+    when: env == "np"
+
+  - set_fact:
+      env_dir: prod
+    when: env == ""
+
+- block:
+  - include: roles/splunk-common/tasks/{{ operation }}.yml
+  when: not check_splunk_install.stat.exists
+

@@ -1,0 +1,36 @@
+---
+
+# file: roles/splunk-common/tasks/verify-install.yml
+
+- block:
+  - name: "Cascade md5 file name"
+    set_fact: 
+      splunk_md5_path: "{{ repos_home }}/splunk_md5/splunk/{{ splunk_enterprise_bundle }}.md5"
+      # splunk_forwarder_md5_path: "{{ repos_home }}/splunk_md5/splunkforwarder/{{ forwarder_bundle }}.md5"
+
+  - name: "Load md5 checksum file for Splunk installation bundles"
+    set_fact:
+      md5_splunk_content: "{{ lookup('file','{{ splunk_md5_path }}') }}"
+      # md5_forwarder_content: "{{ lookup('file','{{ splunk_forwarder_md5_path }}') }}"
+
+  - name: "Retrieve md5 checksum for Splunk installation bundles"
+    set_fact:
+      md5_splunk_git: "{{ md5_splunk_content.split('= ')[-1] }}"
+      # md5_forwarder_git: "{{ md5_forwarder_content.split('= ')[-1] }}"
+
+  - name: "Calculate the md5 checksums for Splunk installation bundle"
+    stat:
+      path: "/splunk/splunk_bundle/{{ splunk_enterprise_bundle }}"
+    register: splunk_bundle_info
+
+  # - name: "Calculate the md5 checksums for Splunk Forwarder installation bundle"
+  #   stat:
+  #     path: "/splunk/splunk_bundle/{{ forwarder_bundle }}"
+  #   register: forwarder_bundle_info
+  delegate_to: localhost
+
+- block:
+  - fail:
+      msg: "the Splunk installation bundle integrity verification failed! Please download the package again!"
+    when: md5_splunk_git != splunk_bundle_info.stat
+  delegate_to: localhost

@@ -1,0 +1,28 @@
+---
+
+  # Ansible bigip_device_ssh
+
+splunk_user: srv-splunk-ansible
+splunk_user_group: splunk
+key_name: splunk
+git_private_key:
+
+# github
+repos_home: /splunk/repository
+platform_repos_url:
+platform_repos_home:
+safe_repo_url:
+safe_repo_home:
+
+splunk_home: /opt/apps
+splunk_web_port: 8000
+splunk_data_port: 9997
+splunk_data_ssl: 9997
+splunk_management_port: 8089
+
+splunk_etc: /opt/apps/splunk/etc
+
+splunk_version: 7.1.1
+
+env: np
+stack_name: acn-test

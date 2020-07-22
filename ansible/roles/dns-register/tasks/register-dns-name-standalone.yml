@@ -1,0 +1,9 @@
+---
+
+# Register Splunk Standalone server dns name
+
+- block:
+  - name: Register splunk {{ instance_type }} instance dns name to in-memory inventory
+    add_host:
+      name: "{{ dns_name }}"
+      groups: "splunk-tenant"
