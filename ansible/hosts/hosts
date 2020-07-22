@@ -1,0 +1,13 @@
+[splunk-idx-master]
+splunk-idx-master.mysplunk.internal.com.au
+
+[splunk-idx-members]
+splunk-idx-0.mysplunk.internal.com.au
+splunk-idx-1.mysplunk.internal.com.au
+
+[splunk-sh-deployer]
+splunk-sh-deployer.mysplunk.internal.com.au
+
+[splunk-sh-members]
+splunk-sh-0.mysplunk.internal.com.au
+splunk-sh-1.mysplunk.internal.com.au
