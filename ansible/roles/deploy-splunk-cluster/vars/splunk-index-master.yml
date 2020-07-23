@@ -1,0 +1,13 @@
+---
+
+# Splunk indexer cluster master
+master_apps_home: "{{ splunk_home }}/splunk/etc/master-apps"
+available_sites: site1
+site_replication_factor: origin:1, total:3
+site_search_factor: origin:1, total:3
+
+cluster_mode: master
+cert_host_name: "{{ indexer_master_dns_prefix }}"
+
+splunk_entity_id: "{{ indexer_master_dns_prefix }}"
+saml_suffix: idx-master

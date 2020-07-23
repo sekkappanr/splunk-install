@@ -1,0 +1,34 @@
+---
+
+# decide splunk configuration location based on the environment
+- block:
+  - set_fact:
+      env_dir: np
+    when: env == "np"
+
+  - set_fact:
+      env_dir: prod
+    when: env == ""
+
+# ensure role temporary directory exists
+
+- block:
+  - name: "Ensure role temporary directory exisit - {{ tmp_dir }}"
+    file: path={{ tmp_dir }} state=directory
+
+# obtain permissions
+
+- block:
+  - include: role/aws-common/tasks/assume-aws-role.yml
+
+# action on operations
+- block:
+  - include: decrypt-password.yml key_name={{ item }}
+    with_items: "{{ password_alias_names }}"
+    when: operation == "decrypt-password"
+
+# clean up
+- block:
+  - name: "clean up -delere {{ tmp_dir }}"
+    file: path={{ tmp_dir }} state=absent
+    always_run: true

@@ -11,6 +11,69 @@
   - name: "Install Splunk on  {{ inventory_hostname }}"
     unarchive: src=/splunk/splunk_bundle/{{ hostvars['localost']['splunk_enterprise_bundle'] }} dest={{ splunk_home }}
 
+  - name: "create server.conf on  {{ inventory_hostname }}"
+    template: src=roles/splunk-common/templates/server.conf.j2 dest={{ splunk_etc }}/system/local/server.conf
+
+  - name: "create web.conf on  {{ inventory_hostname }}"
+    template: src=roles/splunk-common/templates/web.conf.j2 dest={{ splunk_home }}/splunk/etc/system/local/web.conf
+    when: (item == splunk_type)
+    with_items: "{{ web_conf }}" 
+
+# enable security features
+- block:
+  - name: "Check if nab certificate home directory exist"
+    file: path={{ splunk_cert_home }} state=directory
+
+  - include: roles/splunk-common/tasks/enable-ssl.yml
+    when: enable_ssl
+
+  - include: roles/splunk-common/tasks/enable-saml.yml
+    when: enable_saml
+
+# Start splunk with License acceptance
+- block:
+  - name: "Start the splunk with license acceptance splunk version less than 7"
+    shell: "{{ splunk_cmd }} start --answer-yes --no-prompt --accept-license"
+    when: "splunk_version | version_compare('7','<')"
+
+  - name: "Start the splunk with license acceptance splunk version greater than 7"
+    shell: "{{ splunk_cmd }} start --accept-license --answer-yes --no-prompt --seed-passwd '{{ hostvars['localhost']['splunk_admin_password'] }}'"
+    when: "splunk_version | version_compare('7','>=')"
+
+
+# Add sefault service accounts
+- block:
+  - name: "[splunk < 7] wait 10s before service account srv-aplunk-admin"
+    wait_for: timeout=10
+
+  - name: "add splunk service account srv-splunk-admin"
+    shell: "{{ splunk_cmd }} add user srv-splunk-admin -role admin -password '{{ hostvars['localhost']['splunk_admin_password'] }}' -auth admin:changeme"  
+
+  - name: "Reset splunk default password account srv-splunk-admin"
+    shell: "{{ splunk_cmd }} edit user admin -role admin -password '{{ hostvars['localhost']['splunk_admin_password'] }}' -role admin -auth admin:changeme"    
+  when: "splunk_version | version_compare('7','<')"
+  ignore_errors: true
+
+# Add default service account splunk > 7
+# Add sefault service accounts
+- block:
+  - name: "[splunk > 7] wait 10s before service account srv-aplunk-admin"
+    wait_for: timeout=10
+
+  - name: "add splunk service account srv-splunk-admin"
+    shell: "{{ splunk_cmd }} add user srv-splunk-admin -role admin -password '{{ hostvars['localhost']['splunk_admin_password'] }}' -auth admin:'{{ hostvars['localhost']['splunk_admin_password'] }}'"  
+    retries: 2
+    delay: 3
+    register: result
+    until: result|succeeded
+
+  ignore_errors: yes
+  when: "splunk_version | version_compare('7','>=')"
+
+# Update splunk to run as root permission
+- block:
+  - include: roles/splunk-common/tasks/run-as-root.yml
+  
 # Deploy Default Configuration
 # - block:
 #   - name: "Disable First time login page"

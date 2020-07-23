@@ -33,34 +33,34 @@
 
 # Enable this block of when you default Splunk App configuration and MD5 configuration.
 
-# - name: "Checkout latest Splunk Configuration from Git"
-#   host: localhost
-#   connection: local
-#   gather_facts: false
-#   vars_files:
-#     - "vars/splunk-common.yml"
-#   roles:
-#     - { role: splunk-common, operation: checkout-splunk-config, tags: step3-git }
+- name: "Checkout latest Splunk Configuration from Git"
+  host: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "vars/splunk-common.yml"
+  roles:
+    - { role: splunk-common, operation: checkout-splunk-config, tags: step3-git }
 
 # Enable this block of when you default Splunk Admin Password to be retrieved from kms.
 
-# - name: "retrieve splunk security credentials"
-#   hosts: localhost
-#   connection: local
-#   gather_facts: false
-#   vars_files:
-#     - "vars/aws-common{{ env }}.yml"
-#     - "vars/splunk-common.yml"
-#   roles:
-#     - { role: splunk-kms, operation: decrypt-ansible-key ,tags: step4-kms }
-#     - { role: splunk-kms, operations: decrypt-password, tags: step4-kms }
+- name: "retrieve splunk security credentials"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - "vars/aws-common{{ env }}.yml"
+    - "vars/splunk-common.yml"
+  roles:
+    # - { role: splunk-kms, operation: decrypt-ansible-key ,tags: step4-kms }
+    - { role: splunk-kms, operations: decrypt-password, tags: step4-kms }
 
 - name: "[step4-install-splunk] Splunk install setup"
   hosts: localhost
   connection: local
   gather_facts: false
   vars_files:
-    - "vars/aws-common{{ env }}.yml"
+    # - "vars/aws-common{{ env }}.yml"
     - "vars/splunk-common.yml"
   tasks:
     - include: roles/splunk-common/tasks/checkout-splunk-config.yml
@@ -72,10 +72,10 @@
   hosts: splunk-index-master
   gather_facts: false
   vars_files:
-    - "vars/aws-common{{ env }}.yml"
+    # - "vars/aws-common{{ env }}.yml"
     - "vars/splunk-common.yml"
     - "vars/splunk-cluster-common.yml"
-    - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
+    # - "../specs/{{ specs_env }}/{{ stack_name }}.yml"
   roles:
     - { role: deploy-splunk-cluster, operation: deploy-splunk-idx-master, instance_type: cluster , splunk_type: splunk-index-master, tags: step5-deploy-idx-master  }
     - { role: deploy-splunk-forwarder, instance_type: cluster, when: install_forwarder, tags: step5-deploy-idx-master }

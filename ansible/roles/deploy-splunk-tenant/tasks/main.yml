@@ -1,0 +1,28 @@
+---
+
+# Decide Splunk Configuration localtion based on the environment
+
+- block:
+  - set_fact:
+      env_dir: np
+    when: env == "np"
+
+  - set_fact:
+      env_dir: prod
+    when: env == ""
+
+# install splunk vanilla version
+- block:
+  - include_role:
+      name: splunk-common
+    vars:
+      operation: install-splunk-vanilla
+
+# Configure server
+- block:
+  - name: Update idx_common_config on {{ inventory_hostname }}
+    copy: src={{ platform_repos_home }}/{{ env_dir }}/indexer/idx_common_config dest={{ splunk_etc }}/apps
+
+  - name: Update sh_common_config on {{ inventory_hostname }}
+    copy: src={{ platform_repos_home }}/{{ env_dir }}/search_head/sh_common_config dest={{ splunk_etc }}/apps
+

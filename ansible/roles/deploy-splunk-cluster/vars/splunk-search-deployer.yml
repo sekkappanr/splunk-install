@@ -1,0 +1,9 @@
+---
+
+master_apps_home: "{{ splunk_home }}/splunk/etc/shcluster/apps"
+search_head_cluster_label: search_head_cluster
+search_head_cluster_key: search_head_cluster
+cert_host_name: "{{ search_head_deployer_dns_prefix }}"
+
+splunk_entity_id: "{{ search_head_deployer_dns_prefix }}"
+saml_suffix: sh-deployer

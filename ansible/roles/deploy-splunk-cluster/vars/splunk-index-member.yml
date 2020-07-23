@@ -1,0 +1,7 @@
+---
+
+splunk_db: /opt/data
+replication_port: 9887
+cluster_mode: slave
+
+cert_host_name: "{{ indexer_member_dns_prefix }}"

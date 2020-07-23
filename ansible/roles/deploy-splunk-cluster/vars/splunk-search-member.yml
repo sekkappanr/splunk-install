@@ -1,0 +1,11 @@
+---
+
+search_head_cluster_label: search_head_cluster
+search_head_cluster_key: search_head_cluster
+index_cluster_key: indexer_cluster
+splunk_search_replication_port: 34567
+cluster_mode: searchhead
+cert_host_name: "{{ search_head_member_dns_prefix }}"
+
+splunk_entity_id: "{{ search_head_member_dns_prefix }}"
+saml_suffix: sh

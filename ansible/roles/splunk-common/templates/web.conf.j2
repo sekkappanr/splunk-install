@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+[settings]
+updateCheckerBaseURL = false
+{% if enable_ssl = "false" %}
+enableSplunkWebSSL = false
+{% else %}
+enablesplunkwebSSL = true
+sslVeršions = tls1.2
+cipherSuite = TLSV1+HIGH:TLSV1.2+HIGH:@STRENGTH1011
+privkeyPath = {{ splunk_cert_home }}/{{ cert_host_name }}.{{ key_suffix }}
+cacertPath = {{ splunk_cert_home }}/{{ cert_host_name }}.{{ web_pen_suffix }}
+httpport = 8000
+{% endif %}

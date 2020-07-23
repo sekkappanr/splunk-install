@@ -3,6 +3,11 @@
 # Deploy Common Configuration to indexer cluster master
 
 - block:
+  - name: "Deploy Indexer common configuration to indexer master"
+    copy: src={{ platform_repos_home }}/{{ env_dir }}/indexer/{{ item }} dest={{ splunk_etc }}/master-apps
+    with_items:
+      - idx_cluster_common
+
   - name: "Deploy Indexer common configuration to indexer cluster master"
     copy: src={{ platform_repos_home }}/{{ env_dir }}/indexer/{{ item }} dest={{ splunk_etc }}/master-apps
     with_items:

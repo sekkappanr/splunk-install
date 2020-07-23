@@ -1,0 +1,123 @@
+{{ ansible_managed | comment }}
+
+{{ "general server configuration - applicable for all splunk components" | comment }}
+[general]
+{% if instance_type == "cluster" %}
+{% if splunk_type == "splunk-index-member" %}
+{% if az_name == "a" %}
+site = site1
+{% if az_name == "b" %}
+site = site2
+{% endif %}
+{% elif splunk_type == "splunk-search-member" %}
+site = site0
+{% elif splunk_type == "splunk-index-master" %}
+site = site1
+{% endif %}
+serverName = {{ inventory_hostname }}
+pass4SymmKey = {{ hostvars['localhost']['splunk_admin_password'] }}
+{% else %}
+serverName = {{ dns_name }}
+{% endif %}
+
+{% if splunk_type == "splunk-index-member" %}
+[diskUsage]
+minFreeSpace = 8000
+{% if splunk_type == "splunk-tenant" %}
+[diskUsage]
+minFreeSpace = 5000
+{% endif %}
+
+{{ "license server configuration" | comment }}
+[license]
+{% if splunk_type != "splunk-license-server" %}
+master_uri = 
+{% else %}
+active_group = Enterprise
+
+[lmpool:auto_generated_pool_enterprise]
+description = auto_generated_pool_enterprise
+quota = MAX
+slaves = *
+stack_id = enterprise
+{% endif %}
+
+{% if instance_type == "cluster" %}
+{% if splunk_type = "splunk-search-deployer" %}
+{{ "search head cluster deployer configuration" | comment }}
+[shclustering]
+shc luster_label = {{ search_head_cluster_label }}
+pass4SymnKey = {{ search_head_cluster_key }}
+{% elif splunk_type = "splunk-search-member" %}
+{{ "search head cluster menbers configuration" | comment }}
+[clustering]
+mode = {{ cluster_node }}
+multisite = true
+master_uri = clusternaster: npp_prod,clusternaster:enterprise_prod
+
+[clusternaster:enterprise_prod]
+multisite = true
+mode = searchhead
+master_uri = https://{{ indexer_master_dns_prefix }}.{{ dns_domain_name }}:{{ splunk_management_port }}
+pass4SyKey = {{ hostvars['localhost']['splunk_cluster_password'] }}
+
+[shclusteringl]
+disabled = false
+mgmt_uri = https://{{ inventory_hostname }}:{{ splunk_management_port }}
+conf_deploy_fetch_url = https://{{ search_head_deployer_dns_prefix }}.{{ dns_domain_name }}:{{ splunk_management_port }}
+shcluster_label = {{ search_head_cluster_label }}
+pass4SymmKey = {{ search_head_cluster_key }}
+replication_factor {{ search_head_replication_factor }}
+async_replicate_on_proxy = false
+max_peer_rep_load = 20
+
+[replication_port://{{ search_head_replication_port }}]
+{% else %}
+{% if cluster_mode = "master" %}
+{{ "indexer cluster master configuration" | comment }}
+[clustering]
+mode = {{ cluster_mode }}
+multisite = true
+available_sites = {{ available_sites }}
+site_replication_factor = {{ site_replication_factor }}
+site_search_factor = {{ site_search_factor }}
+pass4SymmKey = {{ hostvars['localhost']['splunk_cluster_password'] }}
+
+[indexer_discovery]
+pass4SymmKey = {{ hostvars ['localhost']['splunk_cluster_password'] }}
+{% elif cluster_mode = "slave" }
+{{ "indexer cluster slave configuration" | comment }}
+[clustering]
+mode={{ cluster_mode }} 
+master_uri = https://{{ indexer_master_dns_prefix }}.{{ dns_domain_name }}:{{ splunk_management_port }}
+pass4SyKey = {{ hostvars['localhost']['splunk_cluster_password'] }}
+heartbeat_period = 10
+cxn_timeout = 600
+send_timeout = 600
+rcv_timeout = 600
+
+[replication_port://{{ replication_port }}]
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if enable_ssl == "true" %}
+{{ "enable ssl" | comment }}
+[sslConfig]
+sslKeysfile = certs/{{ cert_host_name }}.{{ server_pem_suffix }}
+sslVersions = tls1.2
+cipherSuite = TLSV1.2:!eNULL:!eNULL
+ssLRootCAPath = {{ splunk_cert_home }}/{{ nab_root_ca }}
+{% if team = "CEMAD" %}
+sslCommonNameToCheck = {{ splunk_ssl_common_name }}.{{ inventory_hostname }}
+{% elif team = "Tenant" %}
+sslCommonNameToCheck = {{ tenant_ssl_common_name }}.{{ inventory_hostname }}
+{% endif %}
+sslVerifyServerCert = true
+{% endif %}
+
+{% if splunk_type = "splunk-search-member" %}
+{{ "search head cluster members configuration" | comment }}
+[httpServer]
+busyKeepAliveIdleTimeout = 188
+{% endif %}

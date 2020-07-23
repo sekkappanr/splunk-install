@@ -1,0 +1,6 @@
+---
+
+splunk_db: /opt/data
+target_dir: target_dir
+cert_tenant_home: "{{ safe_repo_home }}/{{ env }}/releases"
+cert_host_name: "{{ inventory_hostname_short }}"

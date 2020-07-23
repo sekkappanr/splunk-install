@@ -1,0 +1,8 @@
+---
+
+tmp_dir: /tmp/ansible/splunk-kms
+
+password_alias_names:
+  - splunk_admin
+  - splunk_cluster
+  - srv_splunk_admin
